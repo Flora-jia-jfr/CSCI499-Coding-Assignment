@@ -81,7 +81,7 @@ def setup_model(args, device, vocab_size, input_len, n_actions, n_targets):
     # ================== TODO: CODE HERE ================== #
     # Task: Initialize your model.
     # ===================================================== #
-    embedding_dim, num_hiddens, num_layers = 100, 128, 3
+    embedding_dim, num_hiddens, num_layers = 100, 128, 2
     # device, vocab_size, input_len, n_actions, n_targets, embedding_dim, num_hiddens, num_layers
     model = ActionTargetPredict(device, vocab_size, input_len, n_actions, n_targets, embedding_dim, num_hiddens,
                                 num_layers).to(device)

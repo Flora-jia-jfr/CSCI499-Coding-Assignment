@@ -8,14 +8,17 @@ bert_model.to(device)
 
 
 class FCModel(torch.nn.Module):
-    def __init__(self):
+    def __init__(self, device, n_actions, n_targets):
         super(FCModel, self).__init__()
-        self.fc = torch.nn.Linear(in_features=768, out_features=1)
+        self.feature2action = torch.nn.Linear(in_features=768, out_features=n_actions)
+        self.feature2target = torch.nn.Linear(in_features=768, out_features=n_targets)
 
     def forward(self, input):
-        score = self.fc(input)
-        result = torch.sigmoid(score)
-        return result
+        action_score = self.feature2action(input)
+        target_score = self.feature2target(input)
+        action = torch.softmax(action_score)
+        target = torch.softmax(target_score)
+        return action, target
 
 
 # from transformers import BertTokenizer, BertModel
