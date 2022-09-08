@@ -3,7 +3,7 @@ import torch
 import numpy as np
 from collections import Counter
 import matplotlib.pyplot as plt
-
+from transformers import BertTokenizer
 
 def get_device(force_cpu, status=True):
     # if not force_cpu and torch.backends.mps.is_available():
@@ -147,3 +147,21 @@ def plot_and_save(train_action_loss_record, train_target_loss_record, train_acti
     plt.title('training v.s. valid target acc')
     plt.tight_layout()
     plt.savefig('train&valid_lost&accuracy.png')
+
+# def bert_encode_data(data, a2i, t2i):
+#     tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
+#     n_lines = len(data)
+#     input_numpy = np.zeros((n_lines, 512), dtype=np.int32)
+#     # input_array = []
+#     out_numpy = np.zeros((n_lines, 2), dtype=np.int32)
+#     # out_array = []
+#     idx = 0
+#     for txt, output in data:
+#         action, target = output
+#         txt = preprocess_string(txt)
+#         input_txt = tokenizer(txt, padding='max_length', max_length = 512, truncation=True, return_tensors="pt")
+#         input_numpy[idx] = input_txt
+#         out_numpy[idx][0] = a2i[action]
+#         out_numpy[idx][1] = t2i[target]
+#         idx += 1
+#     return input_numpy, out_numpy
