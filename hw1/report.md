@@ -135,3 +135,37 @@ weaken the performance).
    The final valid action accuracy is around 0.96, and the final valid target accuracy is around 0.76.  
    You can also execute `final_train.sh` script to train and evaluate the model.
    
+## Bonus Points Section
+
+I implemented a BERT base pretrained model on target prediction alone. This is mainly because the 
+accuracy for action prediction is already above 90%, and also to reduce the burden of the model.
+I used the pretrained BERT base model from huggingface for this task.
+
+Due to continual error message for GPU(so I have to keep a small batch size which makes it slower
+train), and the long runtime for the model, I barely have enough time to try with different 
+hyperparameters. 
+
+For this model, I only add a linear layer that maps the outputs from the BERT base model
+(the last layer hidden state of the classification token) to the targets. I also set a relatively
+small learning rate for the model since it's already pre-trained with BERT.
+
+From the performance, it took a very longer training time than the LSTM model, and there is some
+improvement in the performance as well.
+
+Since it stopped several times due to my Internet connection to the server I rent and the long
+training time, this is the most recent progress I have by far.  
+The accuracy here, especially in the first epoch, is quite strange:  
+validation accuracy > train accuracy  
+This is partially because the train accuracy contains epochs that just started training, while
+the valid accuracy is gathered after the model has been trained for one epoch on the train dataset.
+However, accuracy of the following epochs are still very steady, and performs better than the LSTM
+model. My guess is that since the task is not very complicated, the improvement after epochs is
+not eminent. Moreover, the hidden-layer output from the classification token contains information
+about the whole sequence, while the task is just to predict the target. Therefore, even if using a 
+BERT base model, there is not a striking increase in the performance.
+Compared with the 0.76 accuracy of target prediction on the LSTM model, the BERT-based model reaches
+an accuracy of roughly 0.8, which still shows certain progress. The price for this is definitely 
+the larger model to train (BERT base model has roughly 110M learnable parameters), and therefore longer
+time for the training.
+
+![image](result_plots/bert_target_performance.png)

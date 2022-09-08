@@ -27,8 +27,7 @@ for i in data["valid_seen"]:
 actions_to_index, index_to_actions, targets_to_index, index_to_targets = build_output_tables(data["train"])
 
 
-
-class Dataset(torch.utils.data.Dataset):
+class BertDataset(torch.utils.data.Dataset):
 
     def __init__(self, df):
         labels = []

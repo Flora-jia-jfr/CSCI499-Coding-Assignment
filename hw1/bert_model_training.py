@@ -6,7 +6,7 @@ from sklearn.metrics import accuracy_score
 from torch import nn
 from transformers import BertTokenizer, BertModel
 from bert_model import BertClassifier
-from dataset_bert import Dataset
+from dataset_bert import BertDataset
 
 from utils import (
     get_device,
@@ -18,14 +18,17 @@ from tqdm import tqdm
 
 
 def train(model, train_data, val_data, learning_rate, epochs):
-    train, val = Dataset(train_data), Dataset(val_data)
 
-    train_dataloader = torch.utils.data.DataLoader(train, batch_size=2, shuffle=True)
-    val_dataloader = torch.utils.data.DataLoader(val, batch_size=2)
-
+    # device
     use_cuda = torch.cuda.is_available()
     device = torch.device("cuda" if use_cuda else "cpu")
 
+    # dataloader
+    train, val = BertDataset(train_data), BertDataset(val_data)
+    train_dataloader = torch.utils.data.DataLoader(train, batch_size=16, shuffle=True)
+    val_dataloader = torch.utils.data.DataLoader(val, batch_size=16)
+
+    # optimizer
     criterion = nn.CrossEntropyLoss()
     optimizer = Adam(model.parameters(), lr=learning_rate)
 
@@ -34,7 +37,6 @@ def train(model, train_data, val_data, learning_rate, epochs):
         criterion = criterion.cuda()
 
     for epoch_num in range(epochs):
-
         total_acc_train = 0
         total_loss_train = 0
 
@@ -42,15 +44,11 @@ def train(model, train_data, val_data, learning_rate, epochs):
             train_label = train_label.to(device)
             mask = train_input['attention_mask'].to(device)
             input_id = train_input['input_ids'].squeeze(1).to(device)
-
             output = model(input_id, mask)
-
             batch_loss = criterion(output, train_label.long())
             total_loss_train += batch_loss.item()
-
             acc = (output.argmax(dim=1) == train_label).sum().item()
             total_acc_train += acc
-
             model.zero_grad()
             batch_loss.backward()
             optimizer.step()
@@ -58,18 +56,14 @@ def train(model, train_data, val_data, learning_rate, epochs):
         total_acc_val = 0
         total_loss_val = 0
 
-        with torch.no_grad():
-
+        with torch.no_grad(): # do not update gradient
             for val_input, val_label in val_dataloader:
                 val_label = val_label.to(device)
                 mask = val_input['attention_mask'].to(device)
                 input_id = val_input['input_ids'].squeeze(1).to(device)
-
                 output = model(input_id, mask)
-
                 batch_loss = criterion(output, val_label.long())
                 total_loss_val += batch_loss.item()
-
                 acc = (output.argmax(dim=1) == val_label).sum().item()
                 total_acc_val += acc
 
