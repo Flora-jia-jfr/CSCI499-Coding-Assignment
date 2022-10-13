@@ -220,6 +220,28 @@ The performance is documented in the previous table. (I copied it to here)
 |          128          |       6        |       0.181       |     0.175      |     28     |     57      |      12      |
 
 
+**context_window=4**
+
+|       |                   Accuracy                   |                      Loss                      |
+|:-----:|:--------------------------------------------:|:----------------------------------------------:|
+| Train | ![train_acc](plots_128_4/CBOW_train_acc.png) | ![train_loss](plots_128_4/CBOW_train_loss.png) |
+|  Val  |   ![val acc](plots_128_4/CBOW_val_acc.png)   |   ![val loss](plots_128_4/CBOW_val_loss.png)   |
+
+**context_window=4 num_epoch=100**
+
+|       |                       Accuracy                        |                      Loss                      |
+|:-----:|:-----------------------------------------------------:|:----------------------------------------------:|
+| Train | ![train_acc](plots_128_4_epoch100/CBOW_train_acc.png) | ![train_loss](plots_128_4_epoch100/CBOW_train_loss.png) |
+|  Val  |       ![val acc](plots_128_4_epoch100/CBOW_val_acc.png)        |   ![val loss](plots_128_4_epoch100/CBOW_val_loss.png)   |
+
+**context_window=6**
+
+|       |                   Accuracy                   |                      Loss                      |
+|:-----:|:--------------------------------------------:|:----------------------------------------------:|
+| Train | ![train_acc](plots_128_6/CBOW_train_acc.png) | ![train_loss](plots_128_6/CBOW_train_loss.png) |
+|  Val  |   ![val acc](plots_128_6/CBOW_val_acc.png)   |   ![val loss](plots_128_6/CBOW_val_loss.png)   |
+
+
 In vitro, the train accuracy and val accuracy is comparatively lower than that of context window of length 2.
 This may partially because we have a longer window, therefore there is fewer data for the model to learn from. 
 Also, longer window size probably contain some irrelevant information that makes the model to even fail on examples
