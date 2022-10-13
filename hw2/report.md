@@ -225,8 +225,9 @@ This may partially because we have a longer window, therefore there is fewer dat
 Also, longer window size probably contain some irrelevant information that makes the model to even fail on examples
 that it was able to pass with a shorted context window.
 
-In vivo, the performance didn't increase much when I keep them running for 30 epochs. Ideally, a longer context length
-should lead to a better performance of the semantic information, but the semantic performance didn't really improve much.
+In vivo, the performance didn't increase much (or even decrease) when I keep them running for 30 epochs. 
+Ideally, a longer context length should lead to a better performance of the semantic information, 
+but the semantic performance didn't really improve much.
 However, when I try running the model with `context_window=4` for 100 epochs, the model reaches  `overall MR = 13, 
 semantic MR = 30, syntactic MR = 5` after roughly 45 epochs. 
 
