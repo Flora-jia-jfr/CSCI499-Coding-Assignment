@@ -1,3 +1,4 @@
+import json
 import re
 import torch
 import numpy as np
@@ -147,3 +148,26 @@ def plot_and_save(train_action_loss_record, train_target_loss_record, train_acti
     plt.title('training v.s. valid target acc')
     plt.tight_layout()
     plt.savefig('train&valid_lost&accuracy.png')
+
+data_file = open("lang_to_sem_data.json")
+data = json.load(data_file)
+train_instructions = []
+valid_seen_instructions = []
+data_file.close()
+# contain 21023 groups, each group contain multiple tuples (instruction, [action, target])
+# contain 820 groups, each group contain multiple tuples (instruction, [action, target])
+
+# combine all the training data
+for i in data["train"]:
+    for group in i:
+        train_instructions.append(group)
+# print(len(train_instructions)) #
+for i in data["valid_seen"]:
+    for group in i:
+        valid_seen_instructions.append(group)
+
+# 2. build the tokenizer_table
+vocab_to_index, index_to_vocab, instruction_len = build_tokenizer_table(data["train"])
+actions_to_index, index_to_actions, targets_to_index, index_to_targets = build_output_tables(data["train"])
+print(len(actions_to_index)) # 8
+print(len(targets_to_index)) # 80
