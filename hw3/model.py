@@ -39,8 +39,9 @@ class Encoder(nn.Module):
             padded_encoder_outputs, _ = pad_packed_sequence(packed_encoder_outputs)
             return padded_encoder_outputs.to(self.device), (encode_hidden_state.to(self.device), encoder_cell_state.to(self.device))
         else:
-            encoder_outputs, (encode_hidden_state, encoder_cell_state) = self.lstm_encoder(embedded, (h_0, c_0))
-            return encoder_outputs, (encode_hidden_state, encoder_cell_state)
+            encoder_outputs, (encoder_hidden_state, encoder_cell_state) = self.lstm_encoder(embedded, (h_0, c_0))
+            # print(encoder_outputs.shape, encoder_hidden_state.shape, encoder_cell_state.shape)
+            return encoder_outputs, (encoder_hidden_state, encoder_cell_state)
 
 
 class BERTEncoder(nn.Module):
@@ -58,8 +59,10 @@ class BERTEncoder(nn.Module):
 
     def forward(self, encoder_input):
         output, hidden = self.bert(input_ids=encoder_input, return_dict=False)
+        hidden = hidden.unsqueeze(0)
         cell_state = torch.zeros(hidden.shape)
-        return output, (hidden, cell_state)
+        # print(output.shape, hidden.shape, cell_state.shape)
+        return output.permute(1, 0, 2).to(self.device), (hidden.to(self.device), cell_state.to(self.device))
 
 
 class Decoder(nn.Module):
