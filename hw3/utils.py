@@ -3,7 +3,7 @@ import re
 import torch
 import numpy as np
 from collections import Counter
-
+import matplotlib.pyplot as plt
 
 def get_device(force_cpu, status=True):
     # if not force_cpu and torch.backends.mps.is_available():
@@ -58,7 +58,8 @@ def build_tokenizer_table(train, vocab_size=1000):
     return (
         vocab_to_index,
         index_to_vocab,
-        int(np.average(padded_lens) + np.std(padded_lens) * 2 + 0.5),
+        # int(np.average(padded_lens) + np.std(padded_lens) * 2 + 0.5),
+        200
     )
 
 
@@ -70,10 +71,15 @@ def build_output_tables(train):
             a, t = outseq
             actions.add(a)
             targets.add(t)
-    actions_to_index = {a: i+1 for i, a in enumerate(actions)}
-    targets_to_index = {t: i+1 for i, t in enumerate(targets)}
-    actions_to_index["<stop>"] = 0
-    targets_to_index["<stop>"] = 0
+    actions_to_index = {a: i+3 for i, a in enumerate(actions)}
+    targets_to_index = {t: i+3 for i, t in enumerate(targets)}
+    actions_to_index["<start>"] = 0
+    actions_to_index["<stop>"] = 1
+    actions_to_index["<pad>"] = 2
+    targets_to_index["<start>"] = 0
+    targets_to_index["<stop>"] = 1
+    targets_to_index["<pad>"] = 2
+
     index_to_actions = {actions_to_index[a]: a for a in actions_to_index}
     index_to_targets = {targets_to_index[t]: t for t in targets_to_index}
     return actions_to_index, index_to_actions, targets_to_index, index_to_targets
@@ -121,7 +127,7 @@ def exact_match(predicted_labels, gt_labels):
     sum = torch.count_nonzero(gt_labels)
     for i in range(batch_size):
         for j in range(seq_length):
-            if predicted_labels[i][j] == gt_labels[i][j] and predicted_labels[i][j] != 0:
+            if predicted_labels[i][j] == gt_labels[i][j] and predicted_labels[i][j] != 1:
                 match += 1
     # pm = (1.0 / seq_length) * i
     # print("match: ", match)
@@ -133,12 +139,16 @@ def read_data_from_file(file_path):
     """
         read in data from json file into two arrays for output (train, valid_seen)
     """
+    # TODO: change back, currently for debug
     max_episode_len = 0  # train already has longer instructions for one episode
     with open(file_path) as data_file:
         data = json.load(data_file)
         for i in data["train"]:
+        # for i in data["train"][0: 6]:
             max_episode_len = max(len(i), max_episode_len)
-    return data["train"], data["valid_seen"], max_episode_len + 1  # add one for <stop>,<stop>
+    return data["train"], data["valid_seen"], max_episode_len + 2  # add one for <stop>,<stop>
+    # return data["train"][0: 6], data["train"][0: 6], max_episode_len + 2
+    # add one for <stop>,<stop> and <start>,<start>
 
 
 def encode_data(episodes, vocab_to_index, seq_len, actions_to_index, targets_to_index, max_episode_len):
@@ -149,13 +159,16 @@ def encode_data(episodes, vocab_to_index, seq_len, actions_to_index, targets_to_
     # print("max_episode_len: ", max_episode_len)  # 605
     n_episodes = len(episodes)
     input = np.zeros((n_episodes, seq_len), dtype=np.int32)
-    output = np.zeros((n_episodes, max_episode_len, 2), dtype=np.int32)
+    output = np.ones((n_episodes, max_episode_len, 2), dtype=np.int32)
     episode_index = 0
     for episode in episodes:
         word_index = 0
-        input[episode_index][word_index] = vocab_to_index["<start>"]
-        word_index += 1
         label_index = 0
+        input[episode_index][word_index] = vocab_to_index["<start>"]
+        output[episode_index][label_index][0] = actions_to_index["<start>"]
+        output[episode_index][label_index][1] = targets_to_index["<start>"]
+        word_index += 1
+        label_index += 1
         for txt, out in episode:
             action, target = out
             txt = preprocess_string(txt)
@@ -168,43 +181,60 @@ def encode_data(episodes, vocab_to_index, seq_len, actions_to_index, targets_to_
                     else:
                         input[episode_index][word_index] = vocab_to_index["<unk>"]
                     word_index += 1
-            input[episode_index][word_index] = vocab_to_index["<end>"]
             output[episode_index][label_index][0] = actions_to_index[action]
             output[episode_index][label_index][1] = targets_to_index[target]
             label_index += 1
+        input[episode_index][word_index] = vocab_to_index["<end>"]
         output[episode_index][label_index][0] = actions_to_index["<stop>"]
         output[episode_index][label_index][1] = targets_to_index["<stop>"]
         episode_index += 1
     return input, output
 
-#
-# file_path = "lang_to_sem_data.json"
-# # 1. read json file into arrays
-# train_episode, valid_seen_episode, max_episode_len = read_data_from_file(file_path)
-# # print(len(train_episode), len(valid_seen_episode))
-# # 2. build tokenizer table
-# vocab_to_index, index_to_vocab, instruction_len = build_tokenizer_table(train_episode)
-# actions_to_index, index_to_actions, targets_to_index, index_to_targets = build_output_tables(train_episode)
-#
-# # 3. encode training and validation set input/outputs
-# train_input, train_output = encode_data(train_episode, vocab_to_index, instruction_len, actions_to_index, targets_to_index, max_episode_len)
-# valid_input, valid_output = encode_data(valid_seen_episode, vocab_to_index, instruction_len, actions_to_index, targets_to_index, max_episode_len)
-#
-# print(len(actions_to_index), len(index_to_actions), len(targets_to_index), len(index_to_targets))
-# print(train_input.shape)  # (21023, 519)
-# print(train_output.shape)  # (21023, 115, 2)
-# print(train_input[0])
-# print(train_output[0])
-# to_print = []
-# for index in train_input[0]:
-#     to_print.append(index_to_vocab[index])
-# print(",".join(to_print))
-# print("action: ", index_to_actions[train_output[0][32][0]])
-# print("target: ", index_to_targets[train_output[0][32][1]])
-# print("action: ", index_to_actions[train_output[0][33][0]])
-# print("target: ", index_to_targets[train_output[0][33][1]])
-# print("action: ", index_to_actions[train_output[0][34][0]])
-# print("target: ", index_to_targets[train_output[0][34][1]])
-# print("action: ", index_to_actions[train_output[0][35][0]])
-# print("target: ", index_to_targets[train_output[0][35][1]])
+def save_and_plot(train_action_loss_record, train_target_loss_record, val_action_loss_record, val_target_loss_record,
+                  val_action_prefix_acc_record, val_target_prefix_acc_record, val_action_exact_acc_record,
+                  val_target_exact_acc_record, train_epoch_record, valid_epoch_record):
 
+    print("train_action_loss_record: ", train_action_loss_record)
+    print("train_target_loss_record: ", train_target_loss_record)
+    print("val_action_loss_record: ", val_action_loss_record)
+    print("val_target_loss_record: ", val_target_loss_record)
+    print("val_action_prefix_acc_record: ", val_action_prefix_acc_record)
+    print("val_target_prefix_acc_record: ", val_target_prefix_acc_record)
+    print("val_action_exact_acc_record: ", val_action_exact_acc_record)
+    print("val_target_exact_acc_record: ", val_target_exact_acc_record)
+
+    plt.figure()
+    plt.subplot(2, 2, 1)
+    plt.plot(train_epoch_record, train_action_loss_record, color='r', label="train action loss")
+    plt.plot(valid_epoch_record, val_action_loss_record, color='g', label="valid action loss")
+    plt.xlabel("epoch")
+    plt.ylabel("action loss")
+    plt.legend(loc="best")
+    plt.title('training v.s. valid action loss')
+
+    plt.subplot(2, 2, 2)
+    plt.plot(train_epoch_record, train_target_loss_record, color='r', label="train target loss")
+    plt.plot(valid_epoch_record, val_target_loss_record, color='g', label="valid target loss")
+    plt.xlabel("epoch")
+    plt.ylabel("target loss")
+    plt.legend(loc="best")
+    plt.title('training v.s. valid target loss')
+
+    plt.subplot(2, 2, 3)
+    plt.plot(valid_epoch_record, val_action_prefix_acc_record, color='r', label="val action prefix acc")
+    plt.plot(valid_epoch_record, val_action_exact_acc_record, color='g', label="val action match acc")
+    plt.xlabel("epoch")
+    plt.ylabel("action acc")
+    plt.legend(loc="best")
+    plt.title('val action acc')
+
+    plt.subplot(2, 2, 4)
+    plt.plot(valid_epoch_record, val_target_prefix_acc_record, color='r', label="val target prefix acc")
+    plt.plot(valid_epoch_record, val_target_exact_acc_record, color='g', label="val target match acc")
+    plt.xlabel("epoch")
+    plt.ylabel("target acc")
+    plt.legend(loc="best")
+    plt.title('val target acc')
+
+    plt.tight_layout()
+    plt.savefig('train&valid_lost&accuracy.png')

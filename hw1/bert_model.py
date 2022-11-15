@@ -40,6 +40,9 @@ class BertClassifier(nn.Module):
 
     def forward(self, input_id, mask):
         _, pooled_output = self.bert(input_ids=input_id, attention_mask=mask, return_dict=False)
+        print("_: ", _.shape)
+        print("pooled_output: ", pooled_output.shape)
+        raise RuntimeError("check")
         dropout_output = self.dropout(pooled_output)
         # out_action = self.hidden2action(dropout_output)
         out_target = self.hidden2target(dropout_output)

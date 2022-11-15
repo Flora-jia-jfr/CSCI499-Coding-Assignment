@@ -7,23 +7,34 @@ from transformers import BertTokenizer
 from utils import build_output_tables
 
 tokenizer = BertTokenizer.from_pretrained('bert-base-cased')
-# # 1. read in all data
-# data_file = open("lang_to_sem_data.json")
-# data = json.load(data_file)
-# train_instructions = []
-# valid_seen_instructions = []
-# data_file.close()
-# # contain 21023 groups, each group contain multiple tuples (instruction, [action, target])
-# # contain 820 groups, each group contain multiple tuples (instruction, [action, target])
-#
-# # combine all the training data
-# for i in data["train"]:
-#     for group in i:
-#         train_instructions.append(group)
-# # print(len(train_instructions)) #
-# for i in data["valid_seen"]:
-#     for group in i:
-#         valid_seen_instructions.append(group)
+# 1. read in all data
+data_file = open("lang_to_sem_data.json")
+data = json.load(data_file)
+train_episodes = []
+valid_episodes = []
+data_file.close()
+# contain 21023 groups, each group contain multiple tuples (instruction, [action, target])
+# contain 820 groups, each group contain multiple tuples (instruction, [action, target])
+
+# combine all the training data
+for i in data["train"]:
+    curr_episode_instruction = ""
+    curr_episode_label = []
+    for instruction, label in i:
+        curr_episode_instruction += instruction
+        curr_episode_label.append(label)  # [[a, t], [a, t]]
+    group = [curr_episode_instruction, curr_episode_label]
+    train_episodes.append(group)
+# print(len(train_instructions)) #
+for i in data["valid_seen"]:
+    curr_episode_instruction = ""
+    curr_episode_label = []
+    for instruction, label in i:
+        curr_episode_instruction += instruction
+        curr_episode_label.append(label)
+    group = [curr_episode_instruction, curr_episode_label]
+    valid_episodes.append(group)
+
 actions_to_index, index_to_actions, targets_to_index, index_to_targets = build_output_tables(data["train"])
 
 
