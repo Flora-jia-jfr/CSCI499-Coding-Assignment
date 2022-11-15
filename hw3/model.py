@@ -32,16 +32,16 @@ class Encoder(nn.Module):
         # print("encoder embedded: ", embedded.shape)
         h_0 = torch.zeros(self.num_layers, batch_size, self.hidden_dim).to(self.device)
         c_0 = torch.zeros(self.num_layers, batch_size, self.hidden_dim).to(self.device)
-        if self.device == torch.device("cpu"):
-            seq_len = torch.tensor([torch.count_nonzero(encoder_input[i]) for i in range(batch_size)])
-            packed_input = pack_padded_sequence(embedded, seq_len, enforce_sorted=False)
-            packed_encoder_outputs, (encode_hidden_state, encoder_cell_state) = self.lstm_encoder(packed_input, (h_0, c_0))
-            padded_encoder_outputs, _ = pad_packed_sequence(packed_encoder_outputs)
-            return padded_encoder_outputs.to(self.device), (encode_hidden_state.to(self.device), encoder_cell_state.to(self.device))
-        else:
-            encoder_outputs, (encoder_hidden_state, encoder_cell_state) = self.lstm_encoder(embedded, (h_0, c_0))
-            # print(encoder_outputs.shape, encoder_hidden_state.shape, encoder_cell_state.shape)
-            return encoder_outputs, (encoder_hidden_state, encoder_cell_state)
+        # if self.device == torch.device("cpu"):
+        seq_len = torch.tensor([torch.count_nonzero(encoder_input[i]) for i in range(batch_size)])
+        packed_input = pack_padded_sequence(embedded, seq_len, enforce_sorted=False)
+        packed_encoder_outputs, (encode_hidden_state, encoder_cell_state) = self.lstm_encoder(packed_input.to(self.device), (h_0, c_0))
+        padded_encoder_outputs, _ = pad_packed_sequence(packed_encoder_outputs)
+        return padded_encoder_outputs.to(self.device), (encode_hidden_state.to(self.device), encoder_cell_state.to(self.device))
+        # else:
+        #     encoder_outputs, (encoder_hidden_state, encoder_cell_state) = self.lstm_encoder(embedded, (h_0, c_0))
+        #     # print(encoder_outputs.shape, encoder_hidden_state.shape, encoder_cell_state.shape)
+        #     return encoder_outputs, (encoder_hidden_state, encoder_cell_state)
 
 
 class BERTEncoder(nn.Module):

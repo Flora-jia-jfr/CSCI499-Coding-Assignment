@@ -214,7 +214,7 @@ def train_epoch(
             epoch_action_exact_acc += action_em
             epoch_target_exact_acc += target_em
 
-        print("action_loss: ", action_loss, "| target_loss: ", target_loss)
+        print("action_loss: ", action_loss.item(), "| target_loss: ", target_loss.item())
         # print("action_prefix_em: ", action_prefix_em)
         # print("target_prefix_em: ", target_prefix_em)
         # print("action_em: ", action_em)
@@ -338,7 +338,7 @@ def train(args, model, loaders, optimizer, action_criterion, target_criterion, d
     # ===================================================== #
     save_and_plot(train_action_loss_record, train_target_loss_record, val_action_loss_record, val_target_loss_record,
                   val_action_prefix_acc_record, val_target_prefix_acc_record, val_action_exact_acc_record,
-                  val_target_exact_acc_record, train_epoch_record, valid_epoch_record, args.model)
+                  val_target_exact_acc_record, train_epoch_record, valid_epoch_record)
 
 def main(args):
     device = get_device(args.force_cpu)

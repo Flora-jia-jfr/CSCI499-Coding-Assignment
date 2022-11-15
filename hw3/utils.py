@@ -59,7 +59,7 @@ def build_tokenizer_table(train, vocab_size=1000):
         vocab_to_index,
         index_to_vocab,
         # int(np.average(padded_lens) + np.std(padded_lens) * 2 + 0.5),
-        200
+        100
     )
 
 
@@ -192,7 +192,7 @@ def encode_data(episodes, vocab_to_index, seq_len, actions_to_index, targets_to_
 
 def save_and_plot(train_action_loss_record, train_target_loss_record, val_action_loss_record, val_target_loss_record,
                   val_action_prefix_acc_record, val_target_prefix_acc_record, val_action_exact_acc_record,
-                  val_target_exact_acc_record, train_epoch_record, valid_epoch_record, type):
+                  val_target_exact_acc_record, train_epoch_record, valid_epoch_record):
 
     print("train_action_loss_record: ", train_action_loss_record)
     print("train_target_loss_record: ", train_target_loss_record)
@@ -237,4 +237,4 @@ def save_and_plot(train_action_loss_record, train_target_loss_record, val_action
     plt.title('val target acc')
 
     plt.tight_layout()
-    plt.savefig(f'train&valid_lost&accuracy_{type}.png')
+    plt.savefig('train&valid_lost&accuracy.png')
