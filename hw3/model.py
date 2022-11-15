@@ -136,23 +136,27 @@ class EncoderDecoder(nn.Module):
         # torch.Size([519, 512, 256]) -- encoder_out
         seq_len = encoder_out.shape[0]
         # torch.Size([1, 512, 256]) -- decoder_hidden
-        logits = torch.zeros(seq_len, batch_size, dtype=float)
-
+        # print("decoder_hidden: ", decoder_hidden.shape)
+        decoder_hidden = decoder_hidden.repeat(seq_len, 1, 1)
+        # print("decoder_hidden(repeated): ", decoder_hidden.shape)
+        concat_hidden_state = torch.cat((encoder_out, decoder_hidden), dim=2)
+        logits = self.fc(concat_hidden_state).squeeze(2)
+        # print("logits:",logits.shape)
         # [batch, seq_len]
-        for i in range(seq_len):
-            encoder_hidden_i = encoder_out[i]
-            # print("encoder_hidden_i: ", encoder_hidden_i.shape)  # torch.Size([512, 256])
-            # print("decoder_hidden: ", decoder_hidden.shape)  # torch.Size([512, 256])
-            concat_hidden_state = torch.cat((encoder_hidden_i, decoder_hidden), dim=1)
-            # print("concat_hidden_state: ", concat_hidden_state)
-            score = self.fc(concat_hidden_state).squeeze(1)
-            # print("score: ", score.shape)  # torch.Size([512])
-            logits[i, :] = score
-        # print("logits: ", logits.shape, logits)  # torch.Size([519, 512])
+        # for i in range(seq_len):
+        #     encoder_hidden_i = encoder_out[i]
+        #     # print("encoder_hidden_i: ", encoder_hidden_i.shape)  # torch.Size([512, 256])
+        #     # print("decoder_hidden: ", decoder_hidden.shape)  # torch.Size([512, 256])
+        #     concat_hidden_state = torch.cat((encoder_hidden_i, decoder_hidden), dim=1)
+        #     # print("concat_hidden_state: ", concat_hidden_state)
+        #     score = self.fc(concat_hidden_state).squeeze(1)
+        #     # print("score: ", score.shape)  # torch.Size([512])
+        #     logits[i, :] = score
+        # # print("logits: ", logits.shape, logits)  # torch.Size([519, 512])
         softmax_logits = self.softmax(logits).float()
         # print("softmax_logits: ", softmax_logits.shape, softmax_logits)
         # print(softmax_logits[:, 0].sum())
-        return softmax_logits
+        return softmax_logits  # [seq_len, batch_size]
 
 
     def forward(self, encoder_input, decoder_target, teacher_forcing=False):
@@ -187,7 +191,7 @@ class EncoderDecoder(nn.Module):
                 weighted_hidden_state = torch.bmm(batch_first_encoder_output, batch_first_softmax_logits).float().squeeze(2)
                 # print("weighted_hidden_state: ", weighted_hidden_state.shape)  # [512, 256]
             else:
-                weighted_hidden_state = hidden
+                weighted_hidden_state = hidden.squeeze(0)
             predicted_action = self.hidden2action(weighted_hidden_state)
             predicted_target = self.hidden2target(weighted_hidden_state)
             # print("predicted_action:", predicted_action.shape)
@@ -212,7 +216,6 @@ class EncoderDecoder(nn.Module):
                 decoder_input = predicted_pair
                 # print("predicted pair: ", predicted_pair.shape, predicted_pair)
                 # print("teaching forcing decoder input: ", decoder_target[:, i, :].shape, decoder_target[:, i, :])
-                # print("for next decoder_input(student):", predicted_pair.shape, predicted_pair)
         # print("action_outputs: ", action_outputs.shape)
         # print("target_outputs: ", target_outputs.shape)
         return action_outputs, target_outputs

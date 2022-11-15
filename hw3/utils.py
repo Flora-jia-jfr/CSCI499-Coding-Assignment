@@ -59,7 +59,7 @@ def build_tokenizer_table(train, vocab_size=1000):
         vocab_to_index,
         index_to_vocab,
         # int(np.average(padded_lens) + np.std(padded_lens) * 2 + 0.5),
-        100
+        200
     )
 
 
@@ -74,11 +74,11 @@ def build_output_tables(train):
     actions_to_index = {a: i+3 for i, a in enumerate(actions)}
     targets_to_index = {t: i+3 for i, t in enumerate(targets)}
     actions_to_index["<start>"] = 0
-    actions_to_index["<stop>"] = 1
-    actions_to_index["<pad>"] = 2
+    actions_to_index["<pad>"] = 1
+    actions_to_index["<stop>"] = 2
     targets_to_index["<start>"] = 0
-    targets_to_index["<stop>"] = 1
-    targets_to_index["<pad>"] = 2
+    targets_to_index["<pad>"] = 1
+    targets_to_index["<stop>"] = 2
 
     index_to_actions = {actions_to_index[a]: a for a in actions_to_index}
     index_to_targets = {targets_to_index[t]: t for t in targets_to_index}
@@ -97,16 +97,17 @@ def prefix_match(predicted_labels, gt_labels):
     # print("gt_labels: ", gt_labels.shape)
     # print("predicted_labels: ", predicted_labels.shape)
     match = 0.0
-    sum = torch.count_nonzero(gt_labels)
+    sum = torch.sum(gt_labels != 1)
     # print("sum of the gt_labels: ", sum)
     for i in range(batch_size):
         for j in range(seq_length):
-            if predicted_labels[i][j] == gt_labels[i][j]:
+            if predicted_labels[i][j] == gt_labels[i][j] and gt_labels[i][j] != 1:
                 match += 1
             else:
                 break
     # pm = (1.0 / seq_length) * i
     # print("match: ", match)
+    # print("sum: ", sum)
     pm = float(match/sum)
     # print("pm: ", pm)
     # torch.set_printoptions(threshold=10000)
@@ -121,16 +122,12 @@ def exact_match(predicted_labels, gt_labels):
     seq_length = gt_labels.shape[1]
     # print("batch_size: ", batch_size)
     # print("seq_length: ", seq_length)
-    # print("gt_labels: ", gt_labels.shape)
-    # print("predicted_labels: ", predicted_labels.shape)
-    match = 0.0
-    sum = torch.count_nonzero(gt_labels)
-    for i in range(batch_size):
-        for j in range(seq_length):
-            if predicted_labels[i][j] == gt_labels[i][j] and predicted_labels[i][j] != 1:
-                match += 1
-    # pm = (1.0 / seq_length) * i
+    # print("gt_labels: ", gt_labels.shape, gt_labels)
+    # print("predicted_labels: ", predicted_labels.shape, predicted_labels)
+    sum = torch.sum(gt_labels != 1)
+    match = torch.sum((predicted_labels == gt_labels) * (predicted_labels != 1))
     # print("match: ", match)
+    # print("sum: ", sum)
     exact_acc = float(match/sum)
     # print("exact_acc: ", exact_acc)
     return exact_acc
@@ -144,10 +141,10 @@ def read_data_from_file(file_path):
     with open(file_path) as data_file:
         data = json.load(data_file)
         for i in data["train"]:
-        # for i in data["train"][0: 6]:
+        # for i in data["train"][0: 10]:
             max_episode_len = max(len(i), max_episode_len)
     return data["train"], data["valid_seen"], max_episode_len + 2  # add one for <stop>,<stop>
-    # return data["train"][0: 6], data["train"][0: 6], max_episode_len + 2
+    # return data["train"][0: 10], data["train"][0: 10], max_episode_len + 2
     # add one for <stop>,<stop> and <start>,<start>
 
 
@@ -192,7 +189,7 @@ def encode_data(episodes, vocab_to_index, seq_len, actions_to_index, targets_to_
 
 def save_and_plot(train_action_loss_record, train_target_loss_record, val_action_loss_record, val_target_loss_record,
                   val_action_prefix_acc_record, val_target_prefix_acc_record, val_action_exact_acc_record,
-                  val_target_exact_acc_record, train_epoch_record, valid_epoch_record):
+                  val_target_exact_acc_record, train_epoch_record, valid_epoch_record, type):
 
     print("train_action_loss_record: ", train_action_loss_record)
     print("train_target_loss_record: ", train_target_loss_record)
@@ -237,4 +234,4 @@ def save_and_plot(train_action_loss_record, train_target_loss_record, val_action
     plt.title('val target acc')
 
     plt.tight_layout()
-    plt.savefig('train&valid_lost&accuracy.png')
+    plt.savefig(f'train&valid_lost&accuracy_{type}.png')

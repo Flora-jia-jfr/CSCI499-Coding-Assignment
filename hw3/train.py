@@ -82,7 +82,7 @@ def setup_model(args, device, vocab_size, instruction_len, num_actions, num_targ
     # of feeding the model prediction into the recurrent model,
     # you will give the embedding of the target token.
     # ===================================================== #
-    embedding_dim, label_embedding_dim, hidden_dim, num_layers = 128, 64, 100, 1
+    embedding_dim, label_embedding_dim, hidden_dim, num_layers = 128, 64, 101, 1
     encoder = Encoder(device, vocab_size, embedding_dim, hidden_dim, num_layers).to(device)
     decoder = Decoder(device, label_embedding_dim, hidden_dim, num_layers, num_actions, num_targets).to(device)
     if args.model == "vanilla":
@@ -199,10 +199,10 @@ def train_epoch(
         """
         # TODO: add code to log these metrics
         if not training:
-            action_prefix_em = prefix_match(predicted_action_outputs, labels[:, :, 0])
-            target_prefix_em = prefix_match(predicted_target_outputs, labels[:, :, 0])
             action_em = exact_match(predicted_action_outputs, labels[:, :, 0])
             target_em = exact_match(predicted_target_outputs, labels[:, :, 0])
+            action_prefix_em = prefix_match(predicted_action_outputs, labels[:, :, 0])
+            target_prefix_em = prefix_match(predicted_target_outputs, labels[:, :, 0])
 
 
         # logging
@@ -338,7 +338,7 @@ def train(args, model, loaders, optimizer, action_criterion, target_criterion, d
     # ===================================================== #
     save_and_plot(train_action_loss_record, train_target_loss_record, val_action_loss_record, val_target_loss_record,
                   val_action_prefix_acc_record, val_target_prefix_acc_record, val_action_exact_acc_record,
-                  val_target_exact_acc_record, train_epoch_record, valid_epoch_record)
+                  val_target_exact_acc_record, train_epoch_record, valid_epoch_record, args.model)
 
 def main(args):
     device = get_device(args.force_cpu)

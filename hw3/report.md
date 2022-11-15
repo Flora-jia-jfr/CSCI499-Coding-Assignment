@@ -2,7 +2,8 @@
 
 exact_match: num of matches in the sequence 
 (if to be exact match from sequence to sequence, almost always be 0. Since currently not even doing well in prefix)
-
+make sense to do so because no one push the model to learn hard for start token, which actually shows once, but can
+make prefix_match = 0 if got wrong
 
 use pack_padded_sequence and pad_packed_sequences gives me some improvement
 but it needs to be used on cpu
