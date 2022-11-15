@@ -58,6 +58,7 @@ class BERTEncoder(nn.Module):
         self.bert = BertModel.from_pretrained('bert-base-cased')
 
     def forward(self, encoder_input):
+        print("encoder_input: ", encoder_input.shape)
         output, hidden = self.bert(input_ids=encoder_input, return_dict=False)
         hidden = hidden.unsqueeze(0)
         cell_state = torch.zeros(hidden.shape)
@@ -139,6 +140,7 @@ class EncoderDecoder(nn.Module):
         # print("decoder_hidden: ", decoder_hidden.shape)
         decoder_hidden = decoder_hidden.repeat(seq_len, 1, 1)
         # print("decoder_hidden(repeated): ", decoder_hidden.shape)
+        assert(torch.equal(decoder_hidden[0], decoder_hidden[1]))
         concat_hidden_state = torch.cat((encoder_out, decoder_hidden), dim=2)
         logits = self.fc(concat_hidden_state).squeeze(2)
         # print("logits:",logits.shape)

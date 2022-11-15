@@ -59,7 +59,7 @@ def build_tokenizer_table(train, vocab_size=1000):
         vocab_to_index,
         index_to_vocab,
         # int(np.average(padded_lens) + np.std(padded_lens) * 2 + 0.5),
-        200
+        500
     )
 
 
