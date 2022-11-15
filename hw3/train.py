@@ -338,7 +338,7 @@ def train(args, model, loaders, optimizer, action_criterion, target_criterion, d
     # ===================================================== #
     save_and_plot(train_action_loss_record, train_target_loss_record, val_action_loss_record, val_target_loss_record,
                   val_action_prefix_acc_record, val_target_prefix_acc_record, val_action_exact_acc_record,
-                  val_target_exact_acc_record, train_epoch_record, valid_epoch_record)
+                  val_target_exact_acc_record, train_epoch_record, valid_epoch_record, args.model)
 
 def main(args):
     device = get_device(args.force_cpu)

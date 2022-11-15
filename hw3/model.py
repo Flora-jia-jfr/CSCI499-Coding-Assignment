@@ -49,7 +49,7 @@ class BERTEncoder(nn.Module):
     """
 
     def __init__(self, device, embedding_dim, hidden_dim):
-        super(Encoder, self).__init__()
+        super(BERTEncoder, self).__init__()
         self.device = device
         self.embedding_dim = embedding_dim
         assert hidden_dim == 768
@@ -102,68 +102,6 @@ class Decoder(nn.Module):
         decoder_outputs, (decode_hidden_state, decoder_cell_state) = self.lstm_decoder(embedded, (hidden, cell))
         # print("decoder_outputs: ", decoder_outputs.shape)
         return decoder_outputs, (decode_hidden_state, decoder_cell_state)
-
-#
-# class EncoderDecoder(nn.Module):
-#     """
-#     Wrapper class over the Encoder and Decoder.
-#     TODO: edit the forward pass arguments to suit your needs
-#     """
-#
-#     def __init__(self, device, encoder, decoder, num_actions, num_targets, hidden_dim):
-#         super().__init__()
-#         self.device = device
-#         self.encoder = encoder
-#         self.decoder = decoder
-#         self.num_actions = num_actions
-#         self.num_targets = num_targets
-#         self.hidden_dim = hidden_dim
-#         self.hidden2action = torch.nn.Linear(hidden_dim, num_actions)
-#         self.hidden2target = torch.nn.Linear(hidden_dim, num_targets)
-#
-#     def forward(self, encoder_input, decoder_target, teacher_forcing=False):
-#         batch_size = encoder_input.shape[0]  # 512
-#         assert batch_size == decoder_target.shape[0]  # assert input batch == output batch
-#         # print("batch_size for encoderDecoder: ", batch_size)
-#         # print("decoder_target: ", decoder_target.shape, decoder_target)  # should be [batch_size, max_len, 2] => [512, 115, 2]
-#         max_len = decoder_target.shape[1]
-#         action_outputs = torch.zeros(batch_size, max_len, self.num_actions)
-#         target_outputs = torch.zeros(batch_size, max_len, self.num_targets)
-#         encoder_output, (encoder_hidden_state, encoder_cell_state) = self.encoder(encoder_input)
-#         # print("encoder_output.shape: ", encoder_output.shape)
-#         # print("(encoder_hidden_state, encoder_cell_state): ", encoder_hidden_state.shape, encoder_cell_state.shape)
-#         decoder_input = torch.zeros(batch_size, 2, dtype=int)
-#         # decoder_input = decoder_target[:, 0, :]  # [512, 2]
-#         # print("decoder_target: ", decoder_target.shape)
-#         # print("decoder input: ", decoder_input.shape)
-#         hidden, cell = encoder_hidden_state, encoder_cell_state
-#         for i in range(max_len):
-#             # print("decoder input: ", decoder_input.shape)
-#             output, (hidden, cell) = self.decoder(decoder_input, hidden, cell)
-#             # hidden and output is the same, since seq_len = 1 for decoder
-#             predicted_action = self.hidden2action(hidden)
-#             predicted_target = self.hidden2target(hidden)
-#             # print("predicted_action:", predicted_action.shape)
-#             # print("predicted_target:", predicted_target.shape)
-#             action_outputs[:, i] = predicted_action  # TODO: output of bound
-#             target_outputs[:, i] = predicted_target
-#             # print(action_outputs.shape)
-#             # print(target_outputs.shape)
-#             # print(torch.squeeze(torch.argmax(predicted_action, dim=2)).shape)
-#             # print(torch.squeeze(torch.argmax(predicted_target, dim=2)).shape)
-#             if teacher_forcing:
-#                 decoder_input = decoder_target[:, i, :]
-#                 print("teaching forcing decoder input: ", decoder_input.shape)
-#             else:
-#                 predicted_pair = torch.cat((torch.squeeze(torch.argmax(predicted_action, dim=2)),
-#                                            torch.squeeze(torch.argmax(predicted_target, dim=2))), dim=1)
-#                 # TODO: check
-#                 decoder_input = predicted_pair
-#
-#         # print("action_outputs: ", action_outputs.shape)
-#         # print("target_outputs: ", target_outputs.shape)
-#         return action_outputs, target_outputs
-
 
 # Attention:
 class EncoderDecoder(nn.Module):
