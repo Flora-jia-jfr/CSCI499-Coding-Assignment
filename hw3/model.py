@@ -58,7 +58,6 @@ class BERTEncoder(nn.Module):
         self.bert = BertModel.from_pretrained('bert-base-cased')
 
     def forward(self, encoder_input):
-        print("encoder_input: ", encoder_input.shape)
         output, hidden = self.bert(input_ids=encoder_input, return_dict=False)
         hidden = hidden.unsqueeze(0)
         cell_state = torch.zeros(hidden.shape)
