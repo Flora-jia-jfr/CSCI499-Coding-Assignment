@@ -12,7 +12,6 @@ from model import (
 )
 from utils import (
     get_device,
-    preprocess_string,
     read_data_from_file,
     build_tokenizer_table,
     build_output_tables,
@@ -37,7 +36,6 @@ def setup_dataloader(args):
     # ===================================================== #
     # 1. read json file into arrays
     train_episode, valid_seen_episode, max_episode_len = read_data_from_file(args.in_data_fn)
-    # print(len(train_episode), len(valid_seen_episode))
     # 2. build tokenizer table
     vocab_to_index, index_to_vocab, instruction_len = build_tokenizer_table(train_episode)
     actions_to_index, index_to_actions, targets_to_index, index_to_targets = build_output_tables(train_episode)
@@ -110,11 +108,7 @@ def setup_optimizer(args, device, model, num_actions, num_targets):
     # TODO: change back for normal training
     learning_rate = 1e-3
     action_weight = torch.softmax(torch.tensor([2] + [1]*(num_actions-1)).float(), dim=-1)
-    # print("action_weight: ", action_weight.shape, action_weight)
-    # print(action_weight.sum())
     target_weight = torch.softmax(torch.tensor([2] + [1] * (num_targets-1)).float(), dim=-1)
-    # print("action_weight: ", target_weight.shape, target_weight)
-    # print(target_weight.sum())
     action_criterion = torch.nn.CrossEntropyLoss(weight=action_weight, ignore_index=1).to(device)
     target_criterion = torch.nn.CrossEntropyLoss(weight=target_weight, ignore_index=1).to(device)
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
@@ -162,27 +156,13 @@ def train_epoch(
         # put model inputs to device
         inputs, labels = inputs.to(device), labels.to(device)
 
-        # calculate the loss and train accuracy and perform backprop
-        # NOTE: feel free to change the parameters to the model forward pass here + outputs
         action_outputs, target_outputs = model(inputs, labels, teacher_forcing=teacher_forcing)
 
         predicted_action_outputs = torch.argmax(action_outputs, dim=2).to(device)
         predicted_target_outputs = torch.argmax(target_outputs, dim=2).to(device)
-        # print("predicted_action_outputs: ", predicted_action_outputs.shape)
-        # print("predicted_target_outputs: ", predicted_target_outputs.shape)
 
-        # TODO: debug
-        # print("check loss:")
-        # print("action_outputs.squeeze(): ", action_outputs.squeeze().shape)
-        # print(labels.shape)
-        # print(labels[:, :, 0].shape)
-        # print("action_outputs: ", action_outputs.shape)
         action_loss = action_criterion(action_outputs.permute(0, 2, 1).to(device), labels[:, :, 0].long())
         target_loss = target_criterion(target_outputs.permute(0, 2, 1).to(device), labels[:, :, 1].long())
-        # print("action_loss: ", action_loss)
-        # print("target_loss: ", target_loss)
-        # action accuracy increase but target accuracy decrease during epochs
-        # (so my guess is that target is not being focused enough)
         loss = action_loss + target_loss
 
         # step optimizer and compute gradients during training
@@ -200,9 +180,9 @@ def train_epoch(
         # TODO: add code to log these metrics
         if not training:
             action_em = exact_match(predicted_action_outputs, labels[:, :, 0])
-            target_em = exact_match(predicted_target_outputs, labels[:, :, 0])
+            target_em = exact_match(predicted_target_outputs, labels[:, :, 1])
             action_prefix_em = prefix_match(predicted_action_outputs, labels[:, :, 0])
-            target_prefix_em = prefix_match(predicted_target_outputs, labels[:, :, 0])
+            target_prefix_em = prefix_match(predicted_target_outputs, labels[:, :, 1])
 
 
         # logging
@@ -219,8 +199,6 @@ def train_epoch(
         # print("target_prefix_em: ", target_prefix_em)
         # print("action_em: ", action_em)
         # print("target_em: ", target_em)
-
-        # raise RuntimeError("Stop and Check")
 
     epoch_action_loss /= len(loader)
     epoch_target_loss /= len(loader)

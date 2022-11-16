@@ -29,19 +29,13 @@ class Encoder(nn.Module):
         batch_size = encoder_input.shape[0]
         # print("batch_size for encoder: ", batch_size) # [512, 519]
         embedded = self.embedding_layer(encoder_input.permute(1, 0))  # change order
-        # print("encoder embedded: ", embedded.shape)
         h_0 = torch.zeros(self.num_layers, batch_size, self.hidden_dim).to(self.device)
         c_0 = torch.zeros(self.num_layers, batch_size, self.hidden_dim).to(self.device)
-        # if self.device == torch.device("cpu"):
         seq_len = torch.tensor([torch.count_nonzero(encoder_input[i]) for i in range(batch_size)])
         packed_input = pack_padded_sequence(embedded, seq_len, enforce_sorted=False)
         packed_encoder_outputs, (encode_hidden_state, encoder_cell_state) = self.lstm_encoder(packed_input.to(self.device), (h_0, c_0))
         padded_encoder_outputs, _ = pad_packed_sequence(packed_encoder_outputs)
         return padded_encoder_outputs.to(self.device), (encode_hidden_state.to(self.device), encoder_cell_state.to(self.device))
-        # else:
-        #     encoder_outputs, (encoder_hidden_state, encoder_cell_state) = self.lstm_encoder(embedded, (h_0, c_0))
-        #     # print(encoder_outputs.shape, encoder_hidden_state.shape, encoder_cell_state.shape)
-        #     return encoder_outputs, (encoder_hidden_state, encoder_cell_state)
 
 
 class BERTEncoder(nn.Module):
@@ -61,7 +55,6 @@ class BERTEncoder(nn.Module):
         output, hidden = self.bert(input_ids=encoder_input, return_dict=False)
         hidden = hidden.unsqueeze(0)
         cell_state = torch.zeros(hidden.shape)
-        # print(output.shape, hidden.shape, cell_state.shape)
         return output.permute(1, 0, 2).to(self.device), (hidden.to(self.device), cell_state.to(self.device))
 
 
@@ -89,21 +82,12 @@ class Decoder(nn.Module):
     def forward(self, decoder_input, hidden, cell):  # decoder_input: [batch_size, 2]
         # print("--------------IN DECODER--------------")
         batch_size = decoder_input.shape[0]
-        # print("batch_size for decoder: ", batch_size)
-        # print("decode_input: ", decoder_input.shape, decoder_input)
         decoder_action_input = torch.unsqueeze(decoder_input[:, 0], dim=0)
         decoder_target_input = torch.unsqueeze(decoder_input[:, 1], dim=0)
-        # print("decoder_action_input: ", decoder_action_input.shape, decoder_action_input)
-        # print("decoder_target_input: ", decoder_target_input.shape, decoder_target_input)
         action_embedded = self.action_embedding(decoder_action_input.to(self.device)) # seq_len, batch, 2
         target_embedded = self.target_embedding(decoder_target_input.to(self.device))
-        # print("target embedded: ", target_embedded.shape)
         embedded = torch.cat((action_embedded, target_embedded), dim=-1)
-        # print("embedded.shape: ", embedded.shape)
-        # print("hidden.shape: ", hidden.shape)
-        # print("cell.shape: ", cell.shape)
         decoder_outputs, (decode_hidden_state, decoder_cell_state) = self.lstm_decoder(embedded, (hidden, cell))
-        # print("decoder_outputs: ", decoder_outputs.shape)
         return decoder_outputs, (decode_hidden_state, decoder_cell_state)
 
 # Attention:
@@ -136,9 +120,7 @@ class EncoderDecoder(nn.Module):
         # torch.Size([519, 512, 256]) -- encoder_out
         seq_len = encoder_out.shape[0]
         # torch.Size([1, 512, 256]) -- decoder_hidden
-        # print("decoder_hidden: ", decoder_hidden.shape)
         decoder_hidden = decoder_hidden.repeat(seq_len, 1, 1)
-        # print("decoder_hidden(repeated): ", decoder_hidden.shape)
         assert(torch.equal(decoder_hidden[0], decoder_hidden[1]))
         concat_hidden_state = torch.cat((encoder_out, decoder_hidden), dim=2)
         logits = self.fc(concat_hidden_state).squeeze(2)
@@ -188,7 +170,7 @@ class EncoderDecoder(nn.Module):
                 batch_first_encoder_output = encoder_output.permute(1, 2, 0)  # [512, 256, 519]
                 # print("batch_first_softmax_logits: ", batch_first_softmax_logits.shape)
                 # print("batch_first_encoder_output: ", batch_first_encoder_output.shape)
-                # TODO: calculate weighted hidden state to be inputted into linear map DEBUG
+                # calculate weighted hidden state to be inputted into linear map
                 weighted_hidden_state = torch.bmm(batch_first_encoder_output, batch_first_softmax_logits).float().squeeze(2)
                 # print("weighted_hidden_state: ", weighted_hidden_state.shape)  # [512, 256]
             else:
@@ -197,25 +179,28 @@ class EncoderDecoder(nn.Module):
             predicted_target = self.hidden2target(weighted_hidden_state)
             # print("predicted_action:", predicted_action.shape)
             # print("predicted_target:", predicted_target.shape)
-            action_outputs[:, i] = predicted_action  # TODO: output of bound
+            action_outputs[:, i] = predicted_action
             target_outputs[:, i] = predicted_target
-            # print(action_outputs.shape)
-            # print(target_outputs.shape)
+            # print("predicted_action: ", predicted_action)
+            # print("predicted_action: ", predicted_target)
+            # print("action_outputs: ", action_outputs.shape, action_outputs)
+            # print("target_outputs: ", target_outputs.shape, target_outputs)
+            # raise RuntimeError("check")
             # print(torch.squeeze(torch.argmax(predicted_action, dim=2)).shape)
             # print(torch.squeeze(torch.argmax(predicted_target, dim=2)).shape)
             if teacher_forcing:
                 decoder_input = decoder_target[:, i, :]
                 # print("teaching forcing decoder input: ", decoder_input.shape, decoder_target)
             else:
+                # print("student forcing")
                 # print("action logits: ", predicted_action)
                 # print("target logits: ", predicted_target)
                 # print("predicted action: ", torch.argmax(predicted_action, dim=1).shape, torch.argmax(predicted_action, dim=1))
                 # print("predicted target: ", torch.argmax(predicted_target, dim=1).shape, torch.argmax(predicted_target, dim=1))
                 predicted_pair = torch.stack((torch.argmax(predicted_action, dim=1),
                                            torch.argmax(predicted_target, dim=1)), dim=-1)
-                # TODO: check
                 decoder_input = predicted_pair
-                # print("predicted pair: ", predicted_pair.shape, predicted_pair)
+                # print("student pair: ", decoder_input.shape, decoder_input)
                 # print("teaching forcing decoder input: ", decoder_target[:, i, :].shape, decoder_target[:, i, :])
         # print("action_outputs: ", action_outputs.shape)
         # print("target_outputs: ", target_outputs.shape)

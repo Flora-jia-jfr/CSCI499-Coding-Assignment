@@ -55,11 +55,11 @@ def build_tokenizer_table(train, vocab_size=1000):
     vocab_to_index["<end>"] = 2
     vocab_to_index["<unk>"] = 3
     index_to_vocab = {vocab_to_index[w]: w for w in vocab_to_index}
+    print("max_len: ", int(np.average(padded_lens) + np.std(padded_lens) * 2 + 0.5),)
     return (
         vocab_to_index,
         index_to_vocab,
-        # int(np.average(padded_lens) + np.std(padded_lens) * 2 + 0.5),
-        500
+        int(np.average(padded_lens) + np.std(padded_lens) * 2 + 0.5),
     )
 
 
@@ -83,6 +83,7 @@ def build_output_tables(train):
     index_to_actions = {actions_to_index[a]: a for a in actions_to_index}
     index_to_targets = {targets_to_index[t]: t for t in targets_to_index}
     return actions_to_index, index_to_actions, targets_to_index, index_to_targets
+
 
 
 def prefix_match(predicted_labels, gt_labels):
@@ -122,6 +123,7 @@ def exact_match(predicted_labels, gt_labels):
     seq_length = gt_labels.shape[1]
     # print("batch_size: ", batch_size)
     # print("seq_length: ", seq_length)
+    torch.set_printoptions(threshold=10000)
     # print("gt_labels: ", gt_labels.shape, gt_labels)
     # print("predicted_labels: ", predicted_labels.shape, predicted_labels)
     sum = torch.sum(gt_labels != 1)
@@ -143,7 +145,7 @@ def read_data_from_file(file_path):
         for i in data["train"]:
         # for i in data["train"][0: 10]:
             max_episode_len = max(len(i), max_episode_len)
-    return data["train"], data["valid_seen"], max_episode_len + 2  # add one for <stop>,<stop>
+    return data["train"], data["valid_seen"], max_episode_len + 2
     # return data["train"][0: 10], data["train"][0: 10], max_episode_len + 2
     # add one for <stop>,<stop> and <start>,<start>
 
